@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import yfinance as yf
 
@@ -29,3 +30,24 @@ def detectTrend(data, shortWindow=50, longWindow=200):
     return signals['trend']
 
 signals = detectTrend(sp500_data)
+
+
+def generateTrendline(data, trend):
+    trendlinePoints = []
+    
+    #uptrend, identify lowest candle points
+    uptrendPoints = data.loc[trend].groupby((data.loc[trend].Close < data.loc[trend].Close.shift(1)).cumsum()).agg({'Low': 'min', 'High': 'max'})
+    uptrendPoints = uptrendPoints.dropna()
+    
+    
+    #downtrend, identify highest candle points
+    downtrendPoints = data.loc[~trend].groupby((data.loc[~trend].Close > data.loc[~trend].Close.shift(1)).cumsum()).agg({'High': 'max', 'Low': 'min'})
+    downtrendPoints = downtrendPoints.dropna()
+    
+    if not uptrendPoints.empty:
+        trendlinePoints.extend(uptrendPoints[['Low', 'High']].values)
+    if not downtrendPoints.empty:
+        trendlinePoints.extend(downtrendPoints[['Low', 'High']].values)
+        
+    return np.array(trendlinePoints)
+
